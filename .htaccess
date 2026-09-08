@@ -1,13 +1,29 @@
 # Configuración de Apache para el hosting de Hostinger.
 # Va en public/, así que Astro lo copia a dist/ y se despliega con el sitio.
 
-# ── Siempre por HTTPS ──────────────────────────────────────────────────────
+# ── Reescritura ────────────────────────────────────────────────────────────
+# Activar el motor aquí es lo que aísla esta carpeta del WordPress que hay en
+# el public_html de arriba: las reglas de reescritura no se heredan, así que
+# al declarar las nuestras las suyas dejan de aplicarse en este directorio.
+# Por eso no hace falta tocar el .htaccess del WordPress, que está en
+# producción y es mejor no andar moviéndolo.
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteCond %{HTTPS} !=on
-  RewriteCond %{HTTP:X-Forwarded-Proto} !https
-  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # ── Siempre por HTTPS ────────────────────────────────────────────────────
+  # DESACTIVADO hasta que el subdominio tenga certificado. Con esto puesto y
+  # sin certificado, el visitante acaba en una dirección que no carga.
+  # Para activarlo: quitar las almohadillas de las tres líneas siguientes.
+  # RewriteCond %{HTTPS} !=on
+  # RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 </IfModule>
+
+# ── Índice de carpeta ──────────────────────────────────────────────────────
+# El sitio usa direcciones de carpeta: /portafolio/ tiene que servir
+# /portafolio/index.html. Se declara aquí para no depender de cómo esté
+# configurado el servidor.
+DirectoryIndex index.html index.php
 
 # ── Comprimir lo que es texto ──────────────────────────────────────────────
 # Las imágenes y los vídeos ya vienen comprimidos: volver a comprimirlos solo
