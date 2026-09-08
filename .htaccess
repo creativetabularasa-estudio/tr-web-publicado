@@ -10,13 +10,19 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # ── Siempre por HTTPS ────────────────────────────────────────────────────
-  # DESACTIVADO hasta que el subdominio tenga certificado. Con esto puesto y
-  # sin certificado, el visitante acaba en una dirección que no carga.
-  # Para activarlo: quitar las almohadillas de las tres líneas siguientes.
-  # RewriteCond %{HTTPS} !=on
-  # RewriteCond %{HTTP:X-Forwarded-Proto} !https
-  # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+  # Cortafuegos contra el WordPress de la carpeta de arriba: cualquier
+  # petición que llegue aquí se sirve tal cual y se deja de reescribir.
+  # En teoría no hace falta —sus reglas solo actúan sobre rutas que no son
+  # un archivo ni una carpeta real, y aquí todas lo son—, pero así tampoco
+  # se cuela un 404 nuestro hacia su index.php.
+  RewriteRule ^ - [L]
+
+  # ── Sobre HTTPS ──────────────────────────────────────────────────────────
+  # No hay regla de redirección a propósito. El borde de Hostinger ya responde
+  # 301 de http a https por su cuenta (cabecera «Server: hcdn»), así que la
+  # regla sobraría. Y sería peligrosa: si ese proxy termina el TLS y pasa la
+  # petición al Apache por http sin la cabecera X-Forwarded-Proto, la regla
+  # se dispararía en bucle y el sitio quedaría inaccesible.
 </IfModule>
 
 # ── Índice de carpeta ──────────────────────────────────────────────────────
