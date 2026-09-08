@@ -1,0 +1,54 @@
+# Configuración de Apache para el hosting de Hostinger.
+# Va en public/, así que Astro lo copia a dist/ y se despliega con el sitio.
+
+# ── Siempre por HTTPS ──────────────────────────────────────────────────────
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# ── Comprimir lo que es texto ──────────────────────────────────────────────
+# Las imágenes y los vídeos ya vienen comprimidos: volver a comprimirlos solo
+# gasta CPU y no ahorra un byte.
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml
+  AddOutputFilterByType DEFLATE application/javascript application/json
+  AddOutputFilterByType DEFLATE image/svg+xml font/woff2
+</IfModule>
+
+# ── Caché ──────────────────────────────────────────────────────────────────
+<IfModule mod_expires.c>
+  ExpiresActive On
+
+  # Los archivos de /_astro llevan un hash en el nombre: si cambia el
+  # contenido cambia el nombre, así que se pueden guardar para siempre.
+  <FilesMatch "\.(js|css)$">
+    ExpiresDefault "access plus 1 year"
+    Header set Cache-Control "public, immutable"
+  </FilesMatch>
+
+  # Medios y tipografías: un mes. Si se sustituye una foto tarda ese tiempo
+  # en llegar a quien ya la tenía, y es un plazo razonable.
+  <FilesMatch "\.(webp|jpg|jpeg|png|svg|mp4|webm|woff2|ico)$">
+    ExpiresDefault "access plus 1 month"
+    Header set Cache-Control "public"
+  </FilesMatch>
+
+  # El HTML no se guarda: es lo que hace que un despliegue se vea enseguida.
+  <FilesMatch "\.html$">
+    ExpiresDefault "access plus 0 seconds"
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# ── Tipos que Apache viejo no conoce ───────────────────────────────────────
+<IfModule mod_mime.c>
+  AddType image/webp .webp
+  AddType font/woff2 .woff2
+  AddType video/mp4 .mp4
+</IfModule>
+
+# No listar el contenido de las carpetas que no tengan índice.
+Options -Indexes
