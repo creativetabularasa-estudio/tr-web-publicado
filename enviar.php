@@ -54,6 +54,7 @@ if (!empty($datos['web'])) {
 
 $nombre = limpiaLinea((string) ($datos['nombre'] ?? ''));
 $correo = limpiaLinea((string) ($datos['correo'] ?? ''));
+$telefono = limpiaLinea((string) ($datos['telefono'] ?? ''));
 $plazo = limpiaLinea((string) ($datos['plazo'] ?? ''));
 $presupuesto = limpiaLinea((string) ($datos['presupuesto'] ?? ''));
 $mensaje = limpiaTexto((string) ($datos['mensaje'] ?? ''));
@@ -78,6 +79,7 @@ $cuerpo = implode("\n", [
     '',
     'Nombre:       ' . $nombre,
     'Correo:       ' . $correo,
+    'Teléfono:     ' . ($telefono !== '' ? $telefono : '—'),
     'Servicios:    ' . ($servicios ? implode(', ', $servicios) : '—'),
     'Plazo:        ' . ($plazo !== '' ? $plazo : '—'),
     'Presupuesto:  ' . ($presupuesto !== '' ? $presupuesto : '—'),
