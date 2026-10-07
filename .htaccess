@@ -5,6 +5,38 @@ RewriteEngine On
 RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
 RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
 
+# /proyectos/ es la carpeta de los casos, no una página: el índice de
+# proyectos es el portafolio. Sin esto el servidor contesta 403.
+RewriteRule ^proyectos/?$ /portafolio/ [L,R=301]
+
+# La home del WordPress vivía también en /home/.
+RewriteRule ^home/?$ / [L,R=301]
+
+# ── Direcciones del WordPress anterior ─────────────────────────────────────
+# Google aún las tiene en su índice. Cada una va a la página que la sustituye,
+# para no perder lo que ya había ganado.
+
+# Los casos eran /proyecto-<descripción>-<proyecto>/: si el final coincide con
+# un proyecto actual, se va a su página; si no, al portafolio.
+RewriteRule ^proyecto-.*-(el-nido|ecocraft|punto-burger|plazalfa|monte-x|estelectric|todo-a-menos|riclar|ot|caribe-beauty-fest|la-mixologa|ac-journeys|marechiaro|puro-cubano|crezlop|mimate)/?$ /proyectos/$1/ [L,R=301]
+RewriteRule ^proyecto-[^/]+/?$ /portafolio/ [L,R=301]
+
+RewriteRule ^portafolio-de-disenos-grafico/?$ /portafolio/ [L,R=301]
+RewriteRule ^servicios-de-branding-y-diseno-grafico/?$ / [L,R=301]
+RewriteRule ^formulario-servicios-tabula-rasa/?$ /contacto/ [L,R=301]
+RewriteRule ^e-floating-buttons/ /contacto/ [L,R=301]
+RewriteRule ^(category|tag|author)/ /portafolio/ [L,R=301]
+
+# El PDF del portafolio lo sustituye la página del portafolio.
+RewriteRule ^wp-content/uploads/.*portafolio.*\.pdf$ /portafolio/ [NC,L,R=301]
+
+# El resto del WordPress no tiene equivalente: 410 («ya no existe») en vez de
+# 404, para que Google lo saque del índice antes y deje de pedirlo. El feed
+# también: llevarlo a la portada sería un soft 404, que Google sigue rastreando.
+RewriteRule ^(.+/)?feed/?$ - [G]
+RewriteRule ^(wp-admin|wp-content|wp-includes|wp-json)(/|$) - [G]
+RewriteRule ^(wp-login|xmlrpc)\.php$ - [G]
+
 <IfModule mod_headers.c>
   # Medio año exigiendo https: el navegador ya no intenta la versión insegura,
   # ni siquiera la primera vez que alguien teclea el dominio a mano.
@@ -25,4 +57,48 @@ RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
   # El sitio no usa cámara, micrófono ni ubicación: se renuncia a ellos de forma
   # explícita, así nada que se cuele en la página puede pedirlos.
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+</IfModule>
+
+# No listar el contenido de las carpetas que no tengan índice.
+Options -Indexes
+
+# ── Comprimir lo que es texto ──────────────────────────────────────────────
+# Las imágenes y los vídeos ya vienen comprimidos: volver a comprimirlos solo
+# gasta CPU y no ahorra un byte.
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml
+  AddOutputFilterByType DEFLATE application/javascript application/json
+  AddOutputFilterByType DEFLATE image/svg+xml font/woff2
+</IfModule>
+
+# ── Caché ──────────────────────────────────────────────────────────────────
+<IfModule mod_expires.c>
+  ExpiresActive On
+
+  # Los archivos de /_astro llevan un hash en el nombre: si cambia el
+  # contenido cambia el nombre, así que se pueden guardar para siempre.
+  <FilesMatch "\.(js|css)$">
+    ExpiresDefault "access plus 1 year"
+    Header set Cache-Control "public, immutable"
+  </FilesMatch>
+
+  # Medios y tipografías: un mes. Si se sustituye una foto tarda ese tiempo
+  # en llegar a quien ya la tenía, y es un plazo razonable.
+  <FilesMatch "\.(webp|jpg|jpeg|png|svg|mp4|webm|woff2|ico)$">
+    ExpiresDefault "access plus 1 month"
+    Header set Cache-Control "public"
+  </FilesMatch>
+
+  # El HTML no se guarda: es lo que hace que un despliegue se vea enseguida.
+  <FilesMatch "\.html$">
+    ExpiresDefault "access plus 0 seconds"
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# ── Tipos que Apache viejo no conoce ───────────────────────────────────────
+<IfModule mod_mime.c>
+  AddType image/webp .webp
+  AddType font/woff2 .woff2
+  AddType video/mp4 .mp4
 </IfModule>
