@@ -1,0 +1,1 @@
+import{t as e}from"./pina.CxQw06mZ.js";e(`[data-pina-carril]`,`portafolio__pinaSticky--asoma`,`all`,`(max-width: 920px), (hover: none) and (min-width: 1440px)`);
