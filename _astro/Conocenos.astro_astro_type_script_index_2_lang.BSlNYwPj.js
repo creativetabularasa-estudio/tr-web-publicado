@@ -1,1 +1,0 @@
-import{t as e}from"./pina.CxQw06mZ.js";e(`[data-pina-carril]`,`conocenos__pinaCarril--asoma`,`(max-width: 1439px), (hover: none)`);

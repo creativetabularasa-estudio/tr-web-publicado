@@ -1,0 +1,1 @@
+import{t as e}from"./pina.DLBc7oLJ.js";e(`[data-pina-carril]`,`portafolio__pinaSticky--asoma`,`all`);
