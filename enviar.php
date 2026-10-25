@@ -15,14 +15,45 @@ declare(strict_types=1);
 const DESTINO = 'hola@estudiotabularasa.com';
 const REMITENTE = 'hola@estudiotabularasa.com'; // tiene que existir en el dominio
 const MAX_LARGO = 4000;
+const MAX_ENVIOS = 5;        // por dirección IP…
+const VENTANA = 600;         // …cada diez minutos
 
 header('Content-Type: application/json; charset=utf-8');
+// No anunciar la versión de PHP: es lo primero que mira quien busca
+// servidores sin parchear.
+header_remove('X-Powered-By');
 
 function salir(int $codigo, string $mensaje): never
 {
     http_response_code($codigo);
     echo json_encode(['ok' => $codigo === 200, 'mensaje' => $mensaje], JSON_UNESCAPED_UNICODE);
     exit;
+}
+
+/**
+ * Frena a quien manda el formulario en bucle para llenar el buzón. Cuenta los
+ * envíos de cada IP en un archivo temporal; si no se puede escribir, deja
+ * pasar: es mejor recibir spam que perder un cliente.
+ */
+function demasiadosEnvios(): bool
+{
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'desconocida';
+    $archivo = sys_get_temp_dir() . '/tr-contacto-' . hash('sha256', $ip);
+    $ahora = time();
+
+    $marcas = [];
+    if (is_readable($archivo)) {
+        $marcas = array_filter(
+            array_map('intval', explode(',', (string) file_get_contents($archivo))),
+            fn (int $t) => $t > $ahora - VENTANA
+        );
+    }
+    if (count($marcas) >= MAX_ENVIOS) {
+        return true;
+    }
+    $marcas[] = $ahora;
+    @file_put_contents($archivo, implode(',', $marcas), LOCK_EX);
+    return false;
 }
 
 /** Quita saltos de línea: es lo que se usa para inyectar cabeceras de correo. */
@@ -74,6 +105,10 @@ if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
     salir(422, 'ese correo no parece válido.');
 }
 
+if (demasiadosEnvios()) {
+    salir(429, 'demasiados envíos seguidos. escríbenos por whatsapp.');
+}
+
 $cuerpo = implode("\n", [
     'Nuevo mensaje desde estudiotabularasa.com',
     '',
@@ -95,7 +130,6 @@ $cabeceras = implode("\r\n", [
     'From: Web Tabula Rasa <' . REMITENTE . '>',
     'Reply-To: ' . $nombre . ' <' . $correo . '>',
     'Content-Type: text/plain; charset=UTF-8',
-    'X-Mailer: PHP/' . phpversion(),
 ]);
 
 $asunto = '=?UTF-8?B?' . base64_encode('Contacto web — ' . $nombre) . '?=';
